@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Список песен</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .text-gradient-red {
+            background-image: linear-gradient(to right, #e63946, #b53d46);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .song-list-item {
+            counter-increment: list-counter;
+        }
+        .song-list-item::before {
+            content: counter(list-counter) ".";
+            @apply text-yellow-500 font-bold mr-4;
+        }
+    </style>
+</head>
+<body class="p-6 md:p-12 flex flex-col items-center justify-center min-h-screen">
+
+    <div class="absolute top-4 right-4 flex space-x-2">
+        <button id="lang-ru" class="px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-red-500 transition-colors">RU</button>
+        <button id="lang-uk" class="px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-red-500 transition-colors">UK</button>
+        <button id="lang-en" class="px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-red-500 transition-colors">EN</button>
+    </div>
+
+    <header class="text-center mb-12">
+        <h1 id="mainTitle" class="text-4xl md:text-5xl font-bold text-gradient-red mb-2"></h1>
+        <p id="mainDescription" class="text-lg text-gray-400 max-w-2xl mx-auto"></p>
+        <p class="text-lg text-white mt-4">
+            <a href="https://www.tiktok.com/@apostrof_guitarist" target="_blank" class="hover:underline text-gradient-red">@apostrof_guitarist</a>
+        </p>
+    </header>
+
+    <main class="w-full max-w-2xl">
+        <ol id="songList" class="list-none p-0 space-y-4"></ol>
+    </main>
+
+    <script>
+        // by apostrof_guitarist
+        document.addEventListener('DOMContentLoaded', () => {
+            const translations = {
+                'ru': {
+                    pageTitle: 'Список песен',
+                    mainTitle: 'Мой репертуар',
+                    mainDescription: 'Привет! Выбирайте песню по номеру из списка ниже.',
+                    songsNotFound: 'Список песен не найден.',
+                    songsEmpty: 'Список песен пуст.'
+                },
+                'uk': {
+                    pageTitle: 'Список пісень',
+                    mainTitle: 'Мій репертуар',
+                    mainDescription: 'Привіт! Обирайте пісню за номером зі списку нижче.',
+                    songsNotFound: 'Список пісень не знайдено.',
+                    songsEmpty: 'Список пісень порожній.'
+                },
+                'en': {
+                    pageTitle: 'Song List',
+                    mainTitle: 'My Repertoire',
+                    mainDescription: 'Hey! Choose a song by number from the list below.',
+                    songsNotFound: 'Song list not found.',
+                    songsEmpty: 'Song list is empty.'
+                }
+            };
+
+            const listElement = document.getElementById('songList');
+
+            async function updateUI(lang) {
+                const textContent = translations[lang] || translations['ru'];
+                
+                document.getElementById('pageTitle').textContent = textContent.pageTitle;
+                document.getElementById('mainTitle').textContent = textContent.mainTitle;
+                document.getElementById('mainDescription').textContent = textContent.mainDescription;
+
+                // by apostrof_guitarist
+                let songs = [];
+                try {
+                    const response = await fetch('songs.txt');
+                    if (!response.ok) {
+                        throw new Error(`Failed to load songs.txt: ${response.statusText}`);
+                    }
+                    const text = await response.text();
+                    songs = text.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0)
+                        .map(line => {
+                            const parts = line.split(' - ');
+                            if (parts.length >= 2) {
+                                return {
+                                    artist: parts[0].trim(),
+                                    title: parts.slice(1).join(' - ').trim()
+                                };
+                            }
+                            return null;
+                        })
+                        .filter(song => song !== null);
+                } catch (error) {
+                    console.error('Ошибка загрузки songs.txt. Убедитесь, что файл существует на сервере.', error);
+                    listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsNotFound}</li>`;
+                    return;
+                }
+
+                listElement.innerHTML = '';
+                if (songs.length === 0) {
+                    listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsEmpty}</li>`;
+                } else {
+                    songs.forEach(song => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700 flex items-center song-list-item';
+                        listItem.innerHTML = `
+                            <span class="text-xl text-white font-semibold flex-1">
+                                ${song.title} - <span class="text-gray-400 font-normal">${song.artist}</span>
+                            </span>
+                        `;
+                        listElement.appendChild(listItem);
+                    });
+                }
+            }
+
+            document.getElementById('lang-ru').addEventListener('click', () => updateUI('ru'));
+            document.getElementById('lang-uk').addEventListener('click', () => updateUI('uk'));
+            document.getElementById('lang-en').addEventListener('click', () => updateUI('en'));
+
+            const userLang = navigator.language.split('-')[0];
+            const initialLang = translations[userLang] ? userLang : 'ru';
+            updateUI(initialLang);
+        });
+    </script>
+</body>
+</html>
