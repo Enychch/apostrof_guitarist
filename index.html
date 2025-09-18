@@ -9,8 +9,11 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #1a1a1a;
-            color: #e0e0e0;
+            background:
+                radial-gradient(1200px 800px at 10% 0%, rgba(230, 57, 70, 0.12), transparent 60%),
+                radial-gradient(900px 700px at 90% 10%, rgba(181, 61, 70, 0.12), transparent 60%),
+                linear-gradient(180deg, #0f0f10 0%, #151515 40%, #1a1a1a 100%);
+            color: #e8e8e8;
         }
         
         .text-gradient-red {
@@ -19,21 +22,50 @@
             -webkit-text-fill-color: transparent;
         }
 
-        .song-list-item {
-            counter-increment: list-counter;
-        }
+        #songList { counter-reset: list-counter; }
+        .song-list-item { counter-increment: list-counter; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+        .song-list-item:hover { transform: translateY(-2px); border-color: rgba(230,57,70,.5); box-shadow: 0 10px 35px rgba(230,57,70,.18); }
         .song-list-item::before {
-            content: counter(list-counter) ".";
-            @apply text-yellow-500 font-bold mr-4;
+            content: counter(list-counter);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.25rem;
+            height: 2.25rem;
+            margin-right: 1rem;
+            border-radius: 9999px;
+            background-image: linear-gradient(135deg, #e63946, #b53d46);
+            color: #ffffff;
+            font-weight: 700;
+            box-shadow: 0 6px 20px rgba(230,57,70,.35);
+            flex: 0 0 2.25rem;
+        }
+
+        .active-lang { background-image: linear-gradient(135deg, #e63946, #b53d46); box-shadow: 0 10px 30px rgba(230,57,70,.35); }
+
+        #langMenu { opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity .15s ease, transform .15s ease; }
+        #langMenu.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        #lang-toggle { width: 2.75rem; height: 2.75rem; }
+
+        @media (max-width: 480px) {
+            .song-list-item { padding: 0.875rem; }
+            .song-list-item::before { width: 2rem; height: 2rem; font-size: .9rem; }
         }
     </style>
 </head>
 <body class="p-6 md:p-12 flex flex-col items-center justify-center min-h-screen">
 
-    <div class="absolute top-4 right-4 flex space-x-2">
-        <button id="lang-ru" class="px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-red-500 transition-colors">RU</button>
-        <button id="lang-uk" class="px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-red-500 transition-colors">UK</button>
-        <button id="lang-en" class="px-3 py-1 bg-gray-700 text-white rounded-md hover:bg-red-500 transition-colors">EN</button>
+    <div class="absolute top-4 right-4">
+        <div class="relative">
+            <button id="lang-toggle" class="flex items-center justify-center rounded-full bg-gray-800 text-white shadow-lg ring-1 ring-white/10 hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-red-500" aria-haspopup="true" aria-expanded="false" aria-controls="langMenu" title="Выбрать язык">
+                <span class="text-xl leading-none">🌐</span>
+            </button>
+            <div id="langMenu" class="absolute right-0 mt-2 w-44 bg-gray-800/95 backdrop-blur rounded-xl shadow-xl border border-white/10 p-2 origin-top-right">
+                <button id="lang-ru" class="w-full text-left px-3 py-3 rounded-lg text-white hover:bg-gray-700 transition">Русский</button>
+                <button id="lang-uk" class="w-full text-left px-3 py-3 rounded-lg text-white hover:bg-gray-700 transition">Українська</button>
+                <button id="lang-en" class="w-full text-left px-3 py-3 rounded-lg text-white hover:bg-gray-700 transition">English</button>
+            </div>
+        </div>
     </div>
 
     <header class="text-center mb-12">
@@ -79,7 +111,9 @@
 
             async function updateUI(lang) {
                 const textContent = translations[lang] || translations['ru'];
-                
+
+                try { localStorage.setItem('lang', lang); } catch (e) {}
+
                 document.getElementById('pageTitle').textContent = textContent.pageTitle;
                 document.getElementById('mainTitle').textContent = textContent.mainTitle;
                 document.getElementById('mainDescription').textContent = textContent.mainDescription;
@@ -118,7 +152,7 @@
                 } else {
                     songs.forEach(song => {
                         const listItem = document.createElement('li');
-                        listItem.className = 'bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-700 flex items-center song-list-item';
+                        listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
                         listItem.innerHTML = `
                             <span class="text-xl text-white font-semibold flex-1">
                                 ${song.title} - <span class="text-gray-400 font-normal">${song.artist}</span>
@@ -127,14 +161,78 @@
                         listElement.appendChild(listItem);
                     });
                 }
+
+                setActiveLangButton(lang);
             }
 
-            document.getElementById('lang-ru').addEventListener('click', () => updateUI('ru'));
-            document.getElementById('lang-uk').addEventListener('click', () => updateUI('uk'));
-            document.getElementById('lang-en').addEventListener('click', () => updateUI('en'));
+            function setActiveLangButton(lang) {
+                ['ru','uk','en'].forEach(code => {
+                    const btn = document.getElementById('lang-' + code);
+                    if (!btn) return;
+                    if (code === lang) {
+                        btn.classList.add('active-lang','ring-2','ring-red-500');
+                    } else {
+                        btn.classList.remove('active-lang','ring-2','ring-red-500');
+                    }
+                });
+            }
 
-            const userLang = navigator.language.split('-')[0];
-            const initialLang = translations[userLang] ? userLang : 'ru';
+            // by apostrof_guitarist
+            const langToggle = document.getElementById('lang-toggle');
+            const langMenu = document.getElementById('langMenu');
+
+            function openMenu() {
+                if (!langMenu) return;
+                langMenu.classList.add('open');
+                langToggle?.setAttribute('aria-expanded','true');
+            }
+            function closeMenu() {
+                if (!langMenu) return;
+                langMenu.classList.remove('open');
+                langToggle?.setAttribute('aria-expanded','false');
+            }
+            function toggleMenu() {
+                if (!langMenu) return;
+                if (langMenu.classList.contains('open')) closeMenu(); else openMenu();
+            }
+
+            langToggle?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleMenu();
+            });
+
+            document.getElementById('lang-ru').addEventListener('click', () => { updateUI('ru'); closeMenu(); });
+            document.getElementById('lang-uk').addEventListener('click', () => { updateUI('uk'); closeMenu(); });
+            document.getElementById('lang-en').addEventListener('click', () => { updateUI('en'); closeMenu(); });
+
+            document.addEventListener('click', (e) => {
+                if (!langMenu) return;
+                if (!langMenu.contains(e.target) && e.target !== langToggle) {
+                    closeMenu();
+                }
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeMenu();
+            });
+
+            const savedLang = (() => { try { return localStorage.getItem('lang'); } catch(e) { return null; } })();
+
+            const prefs = (Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language]).filter(Boolean);
+
+            function normalizeLang(code) {
+                const base = String(code || '').toLowerCase().split('-')[0];
+                if (base === 'ua') return 'uk';
+                return base;
+            }
+
+            const initialLang = translations[savedLang] ? savedLang : (() => {
+                for (const p of prefs) {
+                    const c = normalizeLang(p);
+                    if (translations[c]) return c;
+                }
+                return 'en';
+            })();
+
             updateUI(initialLang);
         });
     </script>
