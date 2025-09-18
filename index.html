@@ -19,6 +19,7 @@
         .text-gradient-red {
             background-image: linear-gradient(to right, #e63946, #b53d46);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
@@ -48,6 +49,7 @@
         #lang-toggle { width: 2.75rem; height: 2.75rem; }
 
         @media (max-width: 480px) {
+            body { padding-top: calc(2rem + constant(safe-area-inset-top)); padding-top: calc(2rem + env(safe-area-inset-top)); }
             .song-list-item { padding: 0.875rem; }
             .song-list-item::before { width: 2rem; height: 2rem; font-size: .9rem; }
         }
