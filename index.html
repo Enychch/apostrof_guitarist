@@ -10,8 +10,8 @@
         body {
             font-family: 'Inter', sans-serif;
             background:
-                radial-gradient(1200px 800px at 10% 0%, rgba(230, 57, 70, 0.12), transparent 60%),
-                radial-gradient(900px 700px at 90% 10%, rgba(181, 61, 70, 0.12), transparent 60%),
+                radial-gradient(max(1200px, 60vmax) max(800px, 40vmax) at 10% 0%, rgba(230, 57, 70, 0.14), transparent 70%),
+                radial-gradient(max(900px, 50vmax) max(700px, 35vmax) at 90% 10%, rgba(181, 61, 70, 0.14), transparent 68%),
                 linear-gradient(180deg, #0f0f10 0%, #151515 40%, #1a1a1a 100%);
             color: #e8e8e8;
         }
@@ -21,6 +21,19 @@
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        canvas#bgParticles {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        body > *:not(canvas#bgParticles):not(.absolute) {
+            position: relative;
+            z-index: 1;
         }
 
         #songList, #picksList { counter-reset: list-counter; }
@@ -80,6 +93,7 @@
     </style>
 </head>
 <body class="p-6 md:p-12 pt-24 md:pt-32 flex flex-col items-center justify-center min-h-screen">
+    <canvas id="bgParticles" aria-hidden="true"></canvas>
 
     <div class="absolute top-4 right-4">
         <div class="relative">
@@ -440,6 +454,98 @@
             updateUI(initialLang);
             // by apostrof_guitarist
             requestAnimationFrame(initIndicator);
+
+            const particlesCanvas = document.getElementById('bgParticles');
+            if (particlesCanvas && particlesCanvas.getContext) {
+                const ctx = particlesCanvas.getContext('2d');
+                let canvasWidth = 0;
+                let canvasHeight = 0;
+                let devicePixelRatioSafe = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+
+                function resizeCanvas() {
+                    devicePixelRatioSafe = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+                    const cssWidth = window.innerWidth;
+                    const cssHeight = window.innerHeight;
+                    canvasWidth = Math.floor(cssWidth * devicePixelRatioSafe);
+                    canvasHeight = Math.floor(cssHeight * devicePixelRatioSafe);
+                    particlesCanvas.width = canvasWidth;
+                    particlesCanvas.height = canvasHeight;
+                    particlesCanvas.style.width = cssWidth + 'px';
+                    particlesCanvas.style.height = cssHeight + 'px';
+                    ctx.setTransform(devicePixelRatioSafe, 0, 0, devicePixelRatioSafe, 0, 0);
+                }
+
+                const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const targetCount = Math.min(140, Math.max(60, Math.floor((window.innerWidth * window.innerHeight) / 18000)));
+                const particles = [];
+
+                function random(min, max) { return Math.random() * (max - min) + min; }
+
+                function createParticle() {
+                    const size = random(1.0, 2.6);
+                    const speed = random(0.08, 0.35) * (size / 2.6);
+                    return {
+                        x: random(0, window.innerWidth),
+                        y: random(0, window.innerHeight),
+                        vx: random(-0.05, 0.05),
+                        vy: -speed,
+                        size,
+                        alpha: random(0.25, 0.75)
+                    };
+                }
+
+                function seedParticles() {
+                    particles.length = 0;
+                    for (let i = 0; i < targetCount; i++) particles.push(createParticle());
+                }
+
+                function wrap(p) {
+                    const margin = 24;
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    if (p.x < -margin) p.x = w + margin;
+                    if (p.x > w + margin) p.x = -margin;
+                    if (p.y < -margin) p.y = h + margin;
+                    if (p.y > h + margin) p.y = -margin;
+                }
+
+                function drawFrame() {
+                    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                    for (let i = 0; i < particles.length; i++) {
+                        const p = particles[i];
+                        p.x += p.vx;
+                        p.y += p.vy;
+                        wrap(p);
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(230, 57, 70, ${p.alpha})`;
+                        ctx.fill();
+                    }
+                }
+
+                let running = !document.hidden && !prefersReducedMotion;
+                function tick() {
+                    if (!running) return;
+                    drawFrame();
+                    requestAnimationFrame(tick);
+                }
+
+                window.addEventListener('resize', () => {
+                    resizeCanvas();
+                });
+                document.addEventListener('visibilitychange', () => {
+                    running = !document.hidden && !prefersReducedMotion;
+                    if (running) requestAnimationFrame(tick);
+                });
+
+                resizeCanvas();
+                seedParticles();
+                if (!prefersReducedMotion) {
+                    requestAnimationFrame(tick);
+                } else {
+                    drawFrame();
+                }
+            }
         });
     </script>
 </body>
