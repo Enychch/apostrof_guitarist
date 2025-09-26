@@ -23,7 +23,7 @@
             -webkit-text-fill-color: transparent;
         }
 
-        #songList { counter-reset: list-counter; }
+        #songList, #picksList { counter-reset: list-counter; }
         .song-list-item { counter-increment: list-counter; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
         .song-list-item:hover { transform: translateY(-2px); border-color: rgba(230,57,70,.5); box-shadow: 0 10px 35px rgba(230,57,70,.18); }
         .song-list-item::before {
@@ -44,9 +44,33 @@
 
         .active-lang { background-image: linear-gradient(135deg, #e63946, #b53d46); box-shadow: 0 10px 30px rgba(230,57,70,.35); }
 
+        .active-tab { color: #fff; }
+
         #langMenu { opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity .15s ease, transform .15s ease; }
         #langMenu.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
         #lang-toggle { width: 2.75rem; height: 2.75rem; }
+
+        .tablist { position: relative; overflow: hidden; border-radius: 0.75rem; }
+        #tabIndicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-image: linear-gradient(135deg, #e63946, #b53d46);
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 30px rgba(230,57,70,.35);
+            transition: transform .25s ease, width .25s ease, height .25s ease;
+            will-change: transform, width, height;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .tab-button { position: relative; z-index: 1; }
+
+        .fade-in { animation: fadeInUp .28s ease both; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
         @media (max-width: 480px) {
             body { padding-top: calc(4rem + constant(safe-area-inset-top)); padding-top: calc(4rem + env(safe-area-inset-top)); }
@@ -79,7 +103,23 @@
     </header>
 
     <main class="w-full max-w-2xl">
-        <ol id="songList" class="list-none p-0 space-y-4"></ol>
+        <div id="tabsContainer" class="tablist mb-6 inline-flex gap-1 md:gap-2 rounded-xl bg-gray-900/60 p-1 ring-1 ring-white/10" role="tablist" aria-label="Song tabs">
+            <div id="tabIndicator" aria-hidden="true"></div>
+            <button id="tab-all" class="tab-button px-4 py-2 rounded-lg text-sm md:text-base text-white/90 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" role="tab" aria-selected="true">Все песни</button>
+            <button id="tab-picks" class="tab-button px-4 py-2 rounded-lg text-sm md:text-base text-white/90 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" role="tab" aria-selected="false">Мои подборы</button>
+        </div>
+        <section id="allSection">
+            <ol id="songList" class="list-none p-0 space-y-4"></ol>
+        </section>
+        <section id="picksSection" class="hidden relative">
+            <h2 id="picksHeader" class="text-2xl font-semibold mb-4 text-gradient-red flex items-center gap-2">
+                <span id="picksHeaderText"></span>
+                <a href="https://mychords.net" target="_blank" rel="noopener noreferrer" class="inline-flex items-center">
+                    <img src="mychords-logo.png" alt="mychords" class="h-6 md:h-7 w-auto" />
+                </a>
+            </h2>
+            <ol id="picksList" class="list-none p-0 space-y-4 relative"></ol>
+        </section>
     </main>
 
     <script>
@@ -91,36 +131,96 @@
                     mainTitle: 'Мой репертуар',
                     mainDescription: 'Привет! Выбирайте песню по номеру из списка ниже.',
                     songsNotFound: 'Список песен не найден.',
-                    songsEmpty: 'Список песен пуст.'
+                    songsEmpty: 'Список песен пуст.',
+                    tabAll: 'Все песни',
+                    tabPicks: 'Мои подборы',
+                    picksHeader: 'Мои подборы на',
+                    picksNotFound: 'Список подборов не найден.',
+                    picksEmpty: 'Список подборов пуст.'
                 },
                 'uk': {
                     pageTitle: 'Список пісень',
                     mainTitle: 'Мій репертуар',
                     mainDescription: 'Привіт! Обирайте пісню за номером зі списку нижче.',
                     songsNotFound: 'Список пісень не знайдено.',
-                    songsEmpty: 'Список пісень порожній.'
+                    songsEmpty: 'Список пісень порожній.',
+                    tabAll: 'Всі пісні',
+                    tabPicks: 'Мої акорди/таби',
+                    picksHeader: 'Мої акорди/таби на',
+                    picksNotFound: 'Список підборів не знайдено.',
+                    picksEmpty: 'Список підборів порожній.'
                 },
                 'en': {
                     pageTitle: 'Song List',
                     mainTitle: 'My Repertoire',
                     mainDescription: 'Hey! Choose a song by number from the list below.',
                     songsNotFound: 'Song list not found.',
-                    songsEmpty: 'Song list is empty.'
+                    songsEmpty: 'Song list is empty.',
+                    tabAll: 'All songs',
+                    tabPicks: 'My chords/tabs',
+                    picksHeader: 'My chords/tabs on',
+                    picksNotFound: 'Picks list not found.',
+                    picksEmpty: 'Picks list is empty.'
                 }
             };
 
             const listElement = document.getElementById('songList');
+            const picksList = document.getElementById('picksList');
+            const allSection = document.getElementById('allSection');
+            const picksSection = document.getElementById('picksSection');
+            const tabAll = document.getElementById('tab-all');
+            const tabPicks = document.getElementById('tab-picks');
+            const tabsContainer = document.getElementById('tabsContainer');
+            const tabIndicator = document.getElementById('tabIndicator');
+            const picksHeaderEl = document.getElementById('picksHeader');
 
-            async function updateUI(lang) {
-                const textContent = translations[lang] || translations['ru'];
+            let lastTextContent = null;
+            let currentTab = (() => { try { return localStorage.getItem('tab') || 'all'; } catch(e) { return 'all'; } })();
 
-                try { localStorage.setItem('lang', lang); } catch (e) {}
+            function moveIndicatorTo(element) {
+                if (!tabsContainer || !tabIndicator || !element) return;
+                const containerRect = tabsContainer.getBoundingClientRect();
+                const elRect = element.getBoundingClientRect();
+                const offsetLeft = elRect.left - containerRect.left;
+                const offsetTop = elRect.top - containerRect.top;
+                tabIndicator.style.transform = `translate(${offsetLeft}px, ${offsetTop}px)`;
+                tabIndicator.style.width = `${elRect.width}px`;
+                tabIndicator.style.height = `${elRect.height}px`;
+                tabIndicator.style.borderRadius = window.getComputedStyle(element).borderRadius || '0.5rem';
+            }
 
-                document.getElementById('pageTitle').textContent = textContent.pageTitle;
-                document.getElementById('mainTitle').textContent = textContent.mainTitle;
-                document.getElementById('mainDescription').textContent = textContent.mainDescription;
+            function setActiveTab(tab) {
+                currentTab = tab;
+                try { localStorage.setItem('tab', tab); } catch (e) {}
+                if (tab === 'all') {
+                    tabAll?.classList.add('active-tab');
+                    tabPicks?.classList.remove('active-tab');
+                    allSection?.classList.remove('hidden');
+                    picksSection?.classList.add('hidden');
+                    if (allSection) {
+                        allSection.classList.remove('fade-in');
+                        void allSection.offsetWidth;
+                        allSection.classList.add('fade-in');
+                    }
+                    moveIndicatorTo(tabAll);
+                } else {
+                    tabPicks?.classList.add('active-tab');
+                    tabAll?.classList.remove('active-tab');
+                    picksSection?.classList.remove('hidden');
+                    allSection?.classList.add('hidden');
+                    if (picksSection) {
+                        picksSection.classList.remove('fade-in');
+                        void picksSection.offsetWidth;
+                        picksSection.classList.add('fade-in');
+                    }
+                    moveIndicatorTo(tabPicks);
+                }
+                if (lastTextContent) {
+                    renderCurrentTab(lastTextContent);
+                }
+            }
 
-                // by apostrof_guitarist
+            async function renderAllSongs(textContent) {
                 let songs = [];
                 try {
                     const response = await fetch('songs.txt');
@@ -163,8 +263,92 @@
                         listElement.appendChild(listItem);
                     });
                 }
+            }
+
+            async function renderPicks(textContent) {
+                if (!picksList) return;
+                let picks = [];
+                try {
+                    const response = await fetch('mychords.txt');
+                    if (!response.ok) {
+                        throw new Error(`Failed to load mychords.txt: ${response.statusText}`);
+                    }
+                    const text = await response.text();
+                    picks = text.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0)
+                        .map(line => {
+                            const m = line.match(/^\s*(.+?)\s*-\s*(.+?)\s*\[(.+?)\]\s*$/);
+                            if (m) {
+                                return { artist: m[1].trim(), title: m[2].trim(), url: m[3].trim() };
+                            }
+                            return null;
+                        })
+                        .filter(item => item !== null);
+                } catch (error) {
+                    console.error('Ошибка загрузки mychords.txt. Убедитесь, что файл существует на сервере.', error);
+                    picksList.innerHTML = `<li class="text-red-500 text-center">${textContent.picksNotFound}</li>`;
+                    return;
+                }
+
+                picksList.innerHTML = '';
+                if (picks.length === 0) {
+                    picksList.innerHTML = `<li class="text-red-500 text-center">${textContent.picksEmpty}</li>`;
+                } else {
+                    picks.forEach(p => {
+                        const listItem = document.createElement('li');
+                        listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
+                        listItem.innerHTML = `
+                            <a href="${p.url}" target="_blank" rel="noopener noreferrer" class="flex items-center w-full">
+                                <span class="text-xl text-white font-semibold flex-1">
+                                    ${p.title} - <span class="text-gray-400 font-normal">${p.artist}</span>
+                                </span>
+                            </a>
+                        `;
+                        picksList.appendChild(listItem);
+                    });
+                }
+            }
+
+            function renderCurrentTab(textContent) {
+                if (currentTab === 'all') {
+                    const p = renderAllSongs(textContent);
+                    if (allSection) {
+                        allSection.classList.remove('fade-in');
+                        void allSection.offsetWidth;
+                        allSection.classList.add('fade-in');
+                    }
+                    return p;
+                }
+                const p = renderPicks(textContent);
+                if (picksSection) {
+                    picksSection.classList.remove('fade-in');
+                    void picksSection.offsetWidth;
+                    picksSection.classList.add('fade-in');
+                }
+                return p;
+            }
+
+            async function updateUI(lang) {
+                const textContent = translations[lang] || translations['ru'];
+
+                try { localStorage.setItem('lang', lang); } catch (e) {}
+
+                document.getElementById('pageTitle').textContent = textContent.pageTitle;
+                document.getElementById('mainTitle').textContent = textContent.mainTitle;
+                document.getElementById('mainDescription').textContent = textContent.mainDescription;
+
+                lastTextContent = textContent;
+
+                if (tabAll) tabAll.textContent = textContent.tabAll;
+                if (tabPicks) tabPicks.textContent = textContent.tabPicks;
+                if (picksHeaderEl) {
+                    const picksHeaderText = document.getElementById('picksHeaderText');
+                    if (picksHeaderText) picksHeaderText.textContent = textContent.picksHeader + ' ';
+                }
 
                 setActiveLangButton(lang);
+                setActiveTab(currentTab);
             }
 
             function setActiveLangButton(lang) {
@@ -217,6 +401,24 @@
                 if (e.key === 'Escape') closeMenu();
             });
 
+            tabAll?.addEventListener('click', () => { setActiveTab('all'); });
+            tabPicks?.addEventListener('click', () => { setActiveTab('picks'); });
+
+            function initIndicator() {
+                if (!tabIndicator || !tabsContainer) return;
+                const activeBtn = currentTab === 'all' ? tabAll : tabPicks;
+                if (activeBtn) {
+                    const rect = activeBtn.getBoundingClientRect();
+                    tabIndicator.style.width = `${rect.width}px`;
+                    tabIndicator.style.height = `${rect.height}px`;
+                }
+                moveIndicatorTo(currentTab === 'all' ? tabAll : tabPicks);
+            }
+
+            window.addEventListener('resize', () => {
+                moveIndicatorTo(currentTab === 'all' ? tabAll : tabPicks);
+            });
+
             const savedLang = (() => { try { return localStorage.getItem('lang'); } catch(e) { return null; } })();
 
             const prefs = (Array.isArray(navigator.languages) && navigator.languages.length ? navigator.languages : [navigator.language]).filter(Boolean);
@@ -236,6 +438,8 @@
             })();
 
             updateUI(initialLang);
+            // by apostrof_guitarist
+            requestAnimationFrame(initIndicator);
         });
     </script>
 </body>
