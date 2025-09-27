@@ -88,16 +88,28 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        main { overflow-anchor: none; }
+
+        @keyframes listExitUp { to { opacity: 0; transform: translateY(-8px); } }
+        @keyframes listExitDown { to { opacity: 0; transform: translateY(8px); } }
+        @keyframes listEnterUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes listEnterDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .list-exit-up { animation: listExitUp .18s ease both; }
+        .list-exit-down { animation: listExitDown .18s ease both; }
+        .list-enter-up { animation: listEnterUp .22s ease both; }
+        .list-enter-down { animation: listEnterDown .22s ease both; }
+
         @media (max-width: 480px) {
             body {
                 padding-top: calc(4rem + constant(safe-area-inset-top));
                 padding-top: calc(4rem + env(safe-area-inset-top));
                 background:
-                    radial-gradient(max(1200px, 60vmax) max(800px, 40vmax) at 10% 0vh, rgba(230, 57, 70, 0.10), transparent 75%),
-                    radial-gradient(max(1000px, 65vmax) max(700px, 40vmax) at 50% 0vh, rgba(230, 57, 70, 0.08), transparent 74%),
-                    radial-gradient(max(900px, 50vmax) max(700px, 35vmax) at 90% 0vh, rgba(181, 61, 70, 0.10), transparent 73%),
+                    radial-gradient(max(1200px, 60vmax) max(800px, 40vmax) at 10% 0vh, rgba(230, 57, 70, 0.06), transparent 82%),
+                    radial-gradient(max(1000px, 65vmax) max(700px, 40vmax) at 50% 0vh, rgba(230, 57, 70, 0.05), transparent 80%),
+                    radial-gradient(max(900px, 50vmax) max(700px, 35vmax) at 90% 0vh, rgba(181, 61, 70, 0.06), transparent 79%),
                     linear-gradient(180deg, #0f0f10 0%, #151515 40%, #1a1a1a 100%);
                 background-attachment: scroll, scroll, scroll, scroll;
+                background-blend-mode: normal, normal, normal, normal;
             }
             .song-list-item { padding: 0.875rem; }
             .song-list-item::before { width: 2rem; height: 2rem; font-size: .9rem; }
@@ -148,6 +160,7 @@
         </div>
         <section id="allSection">
             <ol id="songList" class="list-none p-0 space-y-4"></ol>
+            <div id="songPagination" class="mt-4 flex items-center justify-center gap-2"></div>
         </section>
         <section id="chordstabsSection" class="hidden relative">
             <h2 id="chordstabsHeader" class="text-2xl font-semibold mb-4 text-gradient-red flex items-center gap-2">
@@ -157,6 +170,7 @@
                 </a>
             </h2>
             <ol id="chordstabsList" class="list-none p-0 space-y-4 relative"></ol>
+            <div id="chordstabsPagination" class="mt-4 flex items-center justify-center gap-2"></div>
         </section>
     </main>
 
@@ -210,6 +224,8 @@
 
             const listElement = document.getElementById('songList');
             const chordstabsList = document.getElementById('chordstabsList');
+            const songPagination = document.getElementById('songPagination');
+            const chordstabsPagination = document.getElementById('chordstabsPagination');
             const allSection = document.getElementById('allSection');
             const chordstabsSection = document.getElementById('chordstabsSection');
             const tabAll = document.getElementById('tab-all');
@@ -221,10 +237,73 @@
             const clearSearchBtn = document.getElementById('clearSearch');
 
             let lastTextContent = null;
-            let currentTab = (() => { try { return localStorage.getItem('tab') || 'all'; } catch(e) { return 'all'; } })();
+            let currentTab = (() => { try {
+                const t = localStorage.getItem('tab');
+                return (t === 'all' || t === 'chordstabs') ? t : 'all';
+            } catch(e) { return 'all'; } })();
             let searchQuery = (() => { try { return localStorage.getItem('searchQuery') || ''; } catch(e) { return ''; } })();
             let songsCache = null; 
             let chordstabsCache = null;
+            let songsSortedCache = null;
+            let chordstabsSortedCache = null;
+            let songsPage = 1;
+            let chordstabsPage = 1;
+            const pageSize = 35;
+            let lastSongsPage = 1;
+            let lastChordstabsPage = 1;
+            let skipNextListAnimation = false;
+
+            function animateListTransition(listEl, direction) {
+                if (!listEl) return Promise.resolve();
+                return new Promise((resolve) => {
+                    const exitClass = direction === 'forward' ? 'list-exit-up' : 'list-exit-down';
+                    const enterClass = direction === 'forward' ? 'list-enter-up' : 'list-enter-down';
+                    listEl.classList.remove('list-enter-up','list-enter-down','list-exit-up','list-exit-down');
+                    listEl.classList.add(exitClass);
+                    const onEnd = () => {
+                        listEl.removeEventListener('animationend', onEnd);
+                        listEl.classList.remove(exitClass);
+                        resolve(enterClass);
+                    };
+                    listEl.addEventListener('animationend', onEnd, { once: true });
+                });
+            }
+
+            function buildPagination(totalItems, currentPage, onPageChange, container) {
+                if (!container) return;
+                container.innerHTML = '';
+                const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+                if (totalPages <= 1) return;
+
+                const btn = (label, page, disabled = false, active = false) => {
+                    const b = document.createElement('button');
+                    b.textContent = label;
+                    b.className = `px-3 py-2 rounded-lg ring-1 ring-white/10 bg-gray-900/60 text-white/80 hover:text-white hover:bg-gray-800 ${disabled ? 'opacity-50 cursor-default' : ''} ${active ? 'ring-2 ring-red-500 text-white' : ''}`;
+                    if (!disabled && !active) b.addEventListener('click', () => {
+                        onPageChange(page);
+                        try {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        } catch (e) {
+                            window.scrollTo(0, 0);
+                        }
+                    });
+                    return b;
+                };
+
+                container.appendChild(btn('‹', Math.max(1, currentPage - 1), currentPage === 1));
+
+                const windowSize = 5;
+                const half = Math.floor(windowSize / 2);
+                let start = Math.max(1, currentPage - half);
+                let end = Math.min(totalPages, start + windowSize - 1);
+                start = Math.max(1, Math.min(start, end - windowSize + 1));
+
+                for (let p = start; p <= end; p++) {
+                    container.appendChild(btn(String(p), p, false, p === currentPage));
+                }
+
+                container.appendChild(btn('›', Math.min(totalPages, currentPage + 1), currentPage === totalPages));
+            }
 
             function normalizeString(value) {
                 try {
@@ -250,9 +329,12 @@
             }
 
             function setActiveTab(tab) {
+                const prevScrollY = window.scrollY || window.pageYOffset || 0;
                 currentTab = tab;
                 try { localStorage.setItem('tab', tab); } catch (e) {}
                 if (tab === 'all') {
+                    skipNextListAnimation = true;
+                    songsPage = 1; lastSongsPage = 1;
                     tabAll?.classList.add('active-tab');
                     tabChordstabsBtn?.classList.remove('active-tab');
                     allSection?.classList.remove('hidden');
@@ -264,6 +346,8 @@
                     }
                     moveIndicatorTo(tabAll);
                 } else if (tab === 'chordstabs') {
+                    skipNextListAnimation = true;
+                    chordstabsPage = 1; lastChordstabsPage = 1;
                     tabChordstabsBtn?.classList.add('active-tab');
                     tabAll?.classList.remove('active-tab');
                     chordstabsSection?.classList.remove('hidden');
@@ -278,10 +362,12 @@
                 if (lastTextContent) {
                     renderCurrentTab(lastTextContent);
                 }
+				
+                window.scrollTo(0, prevScrollY);
             }
 
             async function renderAllSongs(textContent) {
-                let songs = songsCache;
+                let songs = songsSortedCache;
                 if (!Array.isArray(songs)) {
                     songs = [];
                     try {
@@ -290,7 +376,7 @@
                             throw new Error(`Failed to load songs.txt: ${response.statusText}`);
                         }
                         const text = await response.text();
-                        songs = text.split('\n')
+                        const parsed = text.split('\n')
                             .map(line => line.trim())
                             .filter(line => line.length > 0)
                             .map(line => {
@@ -304,7 +390,18 @@
                                 return null;
                             })
                             .filter(song => song !== null);
-                        songsCache = songs;
+                        const withKeys = parsed.map((s, idx) => ({ ...s, __originalIndex: idx }));
+                        withKeys.sort((a, b) => {
+                            const aa = normalizeString(a.artist);
+                            const bb = normalizeString(b.artist);
+                            if (aa !== bb) return aa.localeCompare(bb);
+                            const at = normalizeString(a.title);
+                            const bt = normalizeString(b.title);
+                            return at.localeCompare(bt);
+                        });
+                        songsCache = parsed;
+                        songsSortedCache = withKeys;
+                        songs = withKeys;
                     } catch (error) {
                         console.error('Ошибка загрузки songs.txt. Убедитесь, что файл существует на сервере.', error);
                         listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsNotFound}</li>`;
@@ -320,7 +417,6 @@
                     })
                     : songs;
 
-                listElement.innerHTML = '';
                 if (songs.length === 0) {
                     listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsEmpty}</li>`;
                     return;
@@ -331,7 +427,38 @@
                     return;
                 }
 
-                filtered.forEach(song => {
+                if (query) {
+                    listElement.style.counterReset = 'list-counter 0';
+                    listElement.innerHTML = '';
+                    filtered.forEach(song => {
+                        const originalIndex = (typeof song.__originalIndex === 'number') ? song.__originalIndex : songsCache.indexOf(song);
+                        const listItem = document.createElement('li');
+                        listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
+                        if (originalIndex >= 0) listItem.style.counterReset = `list-counter ${originalIndex}`;
+                        listItem.innerHTML = `
+                            <span class="text-xl text-white font-semibold flex-1">
+                                ${song.title} - <span class="text-gray-400 font-normal">${song.artist}</span>
+                            </span>
+                        `;
+                        listElement.appendChild(listItem);
+                    });
+                    if (songPagination) songPagination.classList.add('hidden');
+                    return;
+                }
+
+                const total = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                songsPage = Math.min(Math.max(1, songsPage), totalPages);
+                const direction = songsPage > lastSongsPage ? 'forward' : 'backward';
+                lastSongsPage = songsPage;
+                const startIdx = (songsPage - 1) * pageSize;
+                const endIdx = Math.min(total, startIdx + pageSize);
+                const pageItems = filtered.slice(startIdx, endIdx);
+                const enterClass = skipNextListAnimation ? null : await animateListTransition(listElement, direction);
+                listElement.innerHTML = '';
+                listElement.style.counterReset = `list-counter ${startIdx}`;
+
+                pageItems.forEach(song => {
                     const listItem = document.createElement('li');
                     listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
                     listItem.innerHTML = `
@@ -341,11 +468,21 @@
                     `;
                     listElement.appendChild(listItem);
                 });
+                if (enterClass) {
+                    listElement.classList.add(enterClass);
+                    requestAnimationFrame(() => {
+                        listElement.classList.remove(enterClass);
+                    });
+                }
+                skipNextListAnimation = false;
+
+                if (songPagination) songPagination.classList.remove('hidden');
+                buildPagination(total, songsPage, (p) => { songsPage = p; renderAllSongs(textContent); }, songPagination);
             }
 
             async function renderChordstabs(textContent) {
                 if (!chordstabsList) return;
-                let chordstabsItems = chordstabsCache;
+                let chordstabsItems = chordstabsSortedCache;
                 if (!Array.isArray(chordstabsItems)) {
                     chordstabsItems = [];
                     try {
@@ -354,7 +491,7 @@
                             throw new Error(`Failed to load mychords.txt: ${response.statusText}`);
                         }
                         const text = await response.text();
-                        chordstabsItems = text.split('\n')
+                        const parsed = text.split('\n')
                             .map(line => line.trim())
                             .filter(line => line.length > 0)
                             .map(line => {
@@ -365,7 +502,18 @@
                                 return null;
                             })
                             .filter(item => item !== null);
-                        chordstabsCache = chordstabsItems;
+                        const withKeys = parsed.map((s, idx) => ({ ...s, __originalIndex: idx }));
+                        withKeys.sort((a, b) => {
+                            const aa = normalizeString(a.artist);
+                            const bb = normalizeString(b.artist);
+                            if (aa !== bb) return aa.localeCompare(bb);
+                            const at = normalizeString(a.title);
+                            const bt = normalizeString(b.title);
+                            return at.localeCompare(bt);
+                        });
+                        chordstabsCache = parsed;
+                        chordstabsSortedCache = withKeys;
+                        chordstabsItems = withKeys;
                     } catch (error) {
                         console.error('Ошибка загрузки mychords.txt. Убедитесь, что файл существует на сервере.', error);
                         chordstabsList.innerHTML = `<li class=\"text-red-500 text-center\">${textContent.chordstabsNotFound}</li>`;
@@ -392,7 +540,39 @@
                     return;
                 }
 
-                filtered.forEach(p => {
+                if (query) {
+                    chordstabsList.style.counterReset = 'list-counter 0';
+                    filtered.forEach(p => {
+                        const originalIndex = (typeof p.__originalIndex === 'number') ? p.__originalIndex : chordstabsCache.indexOf(p);
+                        const listItem = document.createElement('li');
+                        listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
+                        if (originalIndex >= 0) listItem.style.counterReset = `list-counter ${originalIndex}`;
+                        listItem.innerHTML = `
+                            <a href="${p.url}" target="_blank" rel="noopener noreferrer" class="flex items-center w-full">
+                                <span class="text-xl text-white font-semibold flex-1">
+                                    ${p.title} - <span class="text-gray-400 font-normal">${p.artist}</span>
+                                </span>
+                            </a>
+                        `;
+                        chordstabsList.appendChild(listItem);
+                    });
+                    if (chordstabsPagination) chordstabsPagination.classList.add('hidden');
+                    return;
+                }
+
+                const total = filtered.length;
+                const totalPages = Math.max(1, Math.ceil(total / pageSize));
+                chordstabsPage = Math.min(Math.max(1, chordstabsPage), totalPages);
+                const direction = chordstabsPage > lastChordstabsPage ? 'forward' : 'backward';
+                lastChordstabsPage = chordstabsPage;
+                const startIdx = (chordstabsPage - 1) * pageSize;
+                const endIdx = Math.min(total, startIdx + pageSize);
+                const pageItems = filtered.slice(startIdx, endIdx);
+                const enterClass = skipNextListAnimation ? null : await animateListTransition(chordstabsList, direction);
+                chordstabsList.innerHTML = '';
+                chordstabsList.style.counterReset = `list-counter ${startIdx}`;
+
+                pageItems.forEach(p => {
                     const listItem = document.createElement('li');
                     listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
                     listItem.innerHTML = `
@@ -404,6 +584,16 @@
                     `;
                     chordstabsList.appendChild(listItem);
                 });
+                if (enterClass) {
+                    chordstabsList.classList.add(enterClass);
+                    requestAnimationFrame(() => {
+                        chordstabsList.classList.remove(enterClass);
+                    });
+                }
+                skipNextListAnimation = false;
+
+                if (chordstabsPagination) chordstabsPagination.classList.remove('hidden');
+                buildPagination(total, chordstabsPage, (p) => { chordstabsPage = p; renderChordstabs(textContent); }, chordstabsPagination);
             }
 
             function renderCurrentTab(textContent) {
@@ -513,6 +703,10 @@
             function commitSearch(value) {
                 searchQuery = value;
                 try { localStorage.setItem('searchQuery', searchQuery); } catch (e) {}
+                if (searchQuery) {
+                    songsPage = 1;
+                    chordstabsPage = 1;
+                }
                 if (clearSearchBtn) clearSearchBtn.classList.toggle('hidden', !searchQuery);
                 if (lastTextContent) renderCurrentTab(lastTextContent);
             }
@@ -569,6 +763,9 @@
             })();
 
             updateUI(initialLang);
+            if (currentTab !== 'all' && currentTab !== 'chordstabs') {
+                currentTab = 'all';
+            }
             // by apostrof_guitarist
             requestAnimationFrame(initIndicator);
 
