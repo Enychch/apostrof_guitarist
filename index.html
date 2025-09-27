@@ -10,9 +10,12 @@
         body {
             font-family: 'Inter', sans-serif;
             background:
-                radial-gradient(max(1200px, 60vmax) max(800px, 40vmax) at 10% 0%, rgba(230, 57, 70, 0.14), transparent 70%),
-                radial-gradient(max(900px, 50vmax) max(700px, 35vmax) at 90% 10%, rgba(181, 61, 70, 0.14), transparent 68%),
+                radial-gradient(max(1200px, 60vmax) max(800px, 40vmax) at 10% 0vh, rgba(230, 57, 70, 0.18), transparent 66%),
+                radial-gradient(max(1000px, 65vmax) max(700px, 40vmax) at 50% 0vh, rgba(230, 57, 70, 0.14), transparent 65%),
+                radial-gradient(max(900px, 50vmax) max(700px, 35vmax) at 90% 0vh, rgba(181, 61, 70, 0.18), transparent 64%),
                 linear-gradient(180deg, #0f0f10 0%, #151515 40%, #1a1a1a 100%);
+            background-attachment: fixed, fixed, fixed, fixed;
+            background-blend-mode: screen, screen, screen, normal;
             color: #e8e8e8;
         }
         
@@ -36,7 +39,7 @@
             z-index: 1;
         }
 
-        #songList, #picksList { counter-reset: list-counter; }
+        #songList, #chordstabsList { counter-reset: list-counter; }
         .song-list-item { counter-increment: list-counter; transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
         .song-list-item:hover { transform: translateY(-2px); border-color: rgba(230,57,70,.5); box-shadow: 0 10px 35px rgba(230,57,70,.18); }
         .song-list-item::before {
@@ -86,7 +89,16 @@
         }
 
         @media (max-width: 480px) {
-            body { padding-top: calc(4rem + constant(safe-area-inset-top)); padding-top: calc(4rem + env(safe-area-inset-top)); }
+            body {
+                padding-top: calc(4rem + constant(safe-area-inset-top));
+                padding-top: calc(4rem + env(safe-area-inset-top));
+                background:
+                    radial-gradient(max(1200px, 60vmax) max(800px, 40vmax) at 10% 0vh, rgba(230, 57, 70, 0.10), transparent 75%),
+                    radial-gradient(max(1000px, 65vmax) max(700px, 40vmax) at 50% 0vh, rgba(230, 57, 70, 0.08), transparent 74%),
+                    radial-gradient(max(900px, 50vmax) max(700px, 35vmax) at 90% 0vh, rgba(181, 61, 70, 0.10), transparent 73%),
+                    linear-gradient(180deg, #0f0f10 0%, #151515 40%, #1a1a1a 100%);
+                background-attachment: scroll, scroll, scroll, scroll;
+            }
             .song-list-item { padding: 0.875rem; }
             .song-list-item::before { width: 2rem; height: 2rem; font-size: .9rem; }
         }
@@ -98,7 +110,7 @@
     <div class="absolute top-4 right-4 z-50">
         <div class="relative">
             <button id="lang-toggle" class="flex items-center justify-center rounded-full bg-gray-800 text-white shadow-lg ring-1 ring-white/10 hover:bg-gray-700 transition focus:outline-none focus:ring-2 focus:ring-red-500" aria-haspopup="true" aria-expanded="false" aria-controls="langMenu" title="Выбрать язык">
-                <span class="text-xl leading-none">🌐</span>
+                <img src="img/Language.png" alt="Язык" class="w-6 h-6" width="24" height="24" />
             </button>
             <div id="langMenu" class="absolute right-0 mt-2 w-44 bg-gray-800/95 backdrop-blur rounded-xl shadow-xl border border-white/10 p-2 origin-top-right z-50">
                 <button id="lang-ru" class="w-full text-left px-3 py-3 rounded-lg text-white hover:bg-gray-700 transition">Русский</button>
@@ -117,22 +129,34 @@
     </header>
 
     <main class="w-full max-w-2xl">
+        <div class="mb-5 md:mb-6">
+            <label for="searchInput" class="sr-only">Поиск</label>
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none">
+                    <img src="img/Search.png" alt="Поиск" class="w-5 h-5" width="20" height="20" />
+                </span>
+                <input id="searchInput" type="text" inputmode="search" class="w-full pl-10 pr-10 py-3 md:py-3.5 rounded-xl bg-gray-900/60 text-white placeholder-gray-500 ring-1 ring-white/10 focus:outline-none focus:ring-2 focus:ring-red-500 shadow-[0_8px_30px_rgba(0,0,0,0.12)]" placeholder="" autocomplete="off" />
+                <button id="clearSearch" type="button" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition hidden" title="Очистить">
+                    ✕
+                </button>
+            </div>
+        </div>
         <div id="tabsContainer" class="tablist mb-6 inline-flex gap-1 md:gap-2 rounded-xl bg-gray-900/60 p-1 ring-1 ring-white/10" role="tablist" aria-label="Song tabs">
             <div id="tabIndicator" aria-hidden="true"></div>
             <button id="tab-all" class="tab-button px-4 py-2 rounded-lg text-sm md:text-base text-white/90 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" role="tab" aria-selected="true">Все песни</button>
-            <button id="tab-picks" class="tab-button px-4 py-2 rounded-lg text-sm md:text-base text-white/90 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" role="tab" aria-selected="false">Мои подборы</button>
+            <button id="tab-chordstabs" class="tab-button px-4 py-2 rounded-lg text-sm md:text-base text-white/90 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40" role="tab" aria-selected="false">Мои подборы</button>
         </div>
         <section id="allSection">
             <ol id="songList" class="list-none p-0 space-y-4"></ol>
         </section>
-        <section id="picksSection" class="hidden relative">
-            <h2 id="picksHeader" class="text-2xl font-semibold mb-4 text-gradient-red flex items-center gap-2">
-                <span id="picksHeaderText"></span>
+        <section id="chordstabsSection" class="hidden relative">
+            <h2 id="chordstabsHeader" class="text-2xl font-semibold mb-4 text-gradient-red flex items-center gap-2">
+                <span id="chordstabsHeaderText"></span>
                 <a href="https://mychords.net" target="_blank" rel="noopener noreferrer" class="inline-flex items-center">
-                    <img src="mychords-logo.png" alt="mychords" class="h-6 md:h-7 w-auto" />
+                    <img src="img/mychords-logo.png" alt="mychords" class="h-6 md:h-7 w-auto" />
                 </a>
             </h2>
-            <ol id="picksList" class="list-none p-0 space-y-4 relative"></ol>
+            <ol id="chordstabsList" class="list-none p-0 space-y-4 relative"></ol>
         </section>
     </main>
 
@@ -147,10 +171,12 @@
                     songsNotFound: 'Список песен не найден.',
                     songsEmpty: 'Список песен пуст.',
                     tabAll: 'Все песни',
-                    tabPicks: 'Мои подборы',
-                    picksHeader: 'Мои подборы на',
-                    picksNotFound: 'Список подборов не найден.',
-                    picksEmpty: 'Список подборов пуст.'
+                    tabChordstabs: 'Мои подборы',
+                    chordstabsHeader: 'Мои подборы на',
+                    chordstabsNotFound: 'Список подборов не найден.',
+                    chordstabsEmpty: 'Список подборов пуст.',
+                    searchPlaceholder: 'Поиск по названию или исполнителю...',
+                    noResults: 'Ничего не найдено.'
                 },
                 'uk': {
                     pageTitle: 'Список пісень',
@@ -159,10 +185,12 @@
                     songsNotFound: 'Список пісень не знайдено.',
                     songsEmpty: 'Список пісень порожній.',
                     tabAll: 'Всі пісні',
-                    tabPicks: 'Мої акорди/таби',
-                    picksHeader: 'Мої акорди/таби на',
-                    picksNotFound: 'Список підборів не знайдено.',
-                    picksEmpty: 'Список підборів порожній.'
+                    tabChordstabs: 'Мої акорди/таби',
+                    chordstabsHeader: 'Мої акорди/таби на',
+                    chordstabsNotFound: 'Список підборів не знайдено.',
+                    chordstabsEmpty: 'Список підборів порожній.',
+                    searchPlaceholder: 'Пошук за назвою або виконавцем...',
+                    noResults: 'Нічого не знайдено.'
                 },
                 'en': {
                     pageTitle: 'Song List',
@@ -171,25 +199,43 @@
                     songsNotFound: 'Song list not found.',
                     songsEmpty: 'Song list is empty.',
                     tabAll: 'All songs',
-                    tabPicks: 'My chords/tabs',
-                    picksHeader: 'My chords/tabs on',
-                    picksNotFound: 'Picks list not found.',
-                    picksEmpty: 'Picks list is empty.'
+                    tabChordstabs: 'My chordstabs',
+                    chordstabsHeader: 'My chordstabs on',
+                    chordstabsNotFound: 'Chordstabs list not found.',
+                    chordstabsEmpty: 'Chordstabs list is empty.',
+                    searchPlaceholder: 'Search by title or artist...',
+                    noResults: 'No results.'
                 }
             };
 
             const listElement = document.getElementById('songList');
-            const picksList = document.getElementById('picksList');
+            const chordstabsList = document.getElementById('chordstabsList');
             const allSection = document.getElementById('allSection');
-            const picksSection = document.getElementById('picksSection');
+            const chordstabsSection = document.getElementById('chordstabsSection');
             const tabAll = document.getElementById('tab-all');
-            const tabPicks = document.getElementById('tab-picks');
+            const tabChordstabsBtn = document.getElementById('tab-chordstabs');
             const tabsContainer = document.getElementById('tabsContainer');
             const tabIndicator = document.getElementById('tabIndicator');
-            const picksHeaderEl = document.getElementById('picksHeader');
+            const chordstabsHeaderEl = document.getElementById('chordstabsHeader');
+            const searchInput = document.getElementById('searchInput');
+            const clearSearchBtn = document.getElementById('clearSearch');
 
             let lastTextContent = null;
             let currentTab = (() => { try { return localStorage.getItem('tab') || 'all'; } catch(e) { return 'all'; } })();
+            let searchQuery = (() => { try { return localStorage.getItem('searchQuery') || ''; } catch(e) { return ''; } })();
+            let songsCache = null; 
+            let chordstabsCache = null;
+
+            function normalizeString(value) {
+                try {
+                    return String(value || '')
+                        .toLowerCase()
+                        .normalize('NFD')
+                        .replace(/\p{Diacritic}/gu, '');
+                } catch (e) {
+                    return String(value || '').toLowerCase();
+                }
+            }
 
             function moveIndicatorTo(element) {
                 if (!tabsContainer || !tabIndicator || !element) return;
@@ -208,26 +254,26 @@
                 try { localStorage.setItem('tab', tab); } catch (e) {}
                 if (tab === 'all') {
                     tabAll?.classList.add('active-tab');
-                    tabPicks?.classList.remove('active-tab');
+                    tabChordstabsBtn?.classList.remove('active-tab');
                     allSection?.classList.remove('hidden');
-                    picksSection?.classList.add('hidden');
+                    chordstabsSection?.classList.add('hidden');
                     if (allSection) {
                         allSection.classList.remove('fade-in');
                         void allSection.offsetWidth;
                         allSection.classList.add('fade-in');
                     }
                     moveIndicatorTo(tabAll);
-                } else {
-                    tabPicks?.classList.add('active-tab');
+                } else if (tab === 'chordstabs') {
+                    tabChordstabsBtn?.classList.add('active-tab');
                     tabAll?.classList.remove('active-tab');
-                    picksSection?.classList.remove('hidden');
+                    chordstabsSection?.classList.remove('hidden');
                     allSection?.classList.add('hidden');
-                    if (picksSection) {
-                        picksSection.classList.remove('fade-in');
-                        void picksSection.offsetWidth;
-                        picksSection.classList.add('fade-in');
+                    if (chordstabsSection) {
+                        chordstabsSection.classList.remove('fade-in');
+                        void chordstabsSection.offsetWidth;
+                        chordstabsSection.classList.add('fade-in');
                     }
-                    moveIndicatorTo(tabPicks);
+                    moveIndicatorTo(tabChordstabsBtn);
                 }
                 if (lastTextContent) {
                     renderCurrentTab(lastTextContent);
@@ -235,93 +281,129 @@
             }
 
             async function renderAllSongs(textContent) {
-                let songs = [];
-                try {
-                    const response = await fetch('songs.txt');
-                    if (!response.ok) {
-                        throw new Error(`Failed to load songs.txt: ${response.statusText}`);
+                let songs = songsCache;
+                if (!Array.isArray(songs)) {
+                    songs = [];
+                    try {
+                        const response = await fetch('data/songs.txt');
+                        if (!response.ok) {
+                            throw new Error(`Failed to load songs.txt: ${response.statusText}`);
+                        }
+                        const text = await response.text();
+                        songs = text.split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line.length > 0)
+                            .map(line => {
+                                const parts = line.split(' - ');
+                                if (parts.length >= 2) {
+                                    return {
+                                        artist: parts[0].trim(),
+                                        title: parts.slice(1).join(' - ').trim()
+                                    };
+                                }
+                                return null;
+                            })
+                            .filter(song => song !== null);
+                        songsCache = songs;
+                    } catch (error) {
+                        console.error('Ошибка загрузки songs.txt. Убедитесь, что файл существует на сервере.', error);
+                        listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsNotFound}</li>`;
+                        return;
                     }
-                    const text = await response.text();
-                    songs = text.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0)
-                        .map(line => {
-                            const parts = line.split(' - ');
-                            if (parts.length >= 2) {
-                                return {
-                                    artist: parts[0].trim(),
-                                    title: parts.slice(1).join(' - ').trim()
-                                };
-                            }
-                            return null;
-                        })
-                        .filter(song => song !== null);
-                } catch (error) {
-                    console.error('Ошибка загрузки songs.txt. Убедитесь, что файл существует на сервере.', error);
-                    listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsNotFound}</li>`;
-                    return;
                 }
+
+                const query = normalizeString(searchQuery);
+                const filtered = query
+                    ? songs.filter(s => {
+                        const hay = normalizeString(`${s.title} ${s.artist}`);
+                        return hay.includes(query);
+                    })
+                    : songs;
 
                 listElement.innerHTML = '';
                 if (songs.length === 0) {
                     listElement.innerHTML = `<li class="text-red-500 text-center">${textContent.songsEmpty}</li>`;
-                } else {
-                    songs.forEach(song => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
-                        listItem.innerHTML = `
-                            <span class="text-xl text-white font-semibold flex-1">
-                                ${song.title} - <span class="text-gray-400 font-normal">${song.artist}</span>
-                            </span>
-                        `;
-                        listElement.appendChild(listItem);
-                    });
-                }
-            }
-
-            async function renderPicks(textContent) {
-                if (!picksList) return;
-                let picks = [];
-                try {
-                    const response = await fetch('mychords.txt');
-                    if (!response.ok) {
-                        throw new Error(`Failed to load mychords.txt: ${response.statusText}`);
-                    }
-                    const text = await response.text();
-                    picks = text.split('\n')
-                        .map(line => line.trim())
-                        .filter(line => line.length > 0)
-                        .map(line => {
-                            const m = line.match(/^\s*(.+?)\s*-\s*(.+?)\s*\[(.+?)\]\s*$/);
-                            if (m) {
-                                return { artist: m[1].trim(), title: m[2].trim(), url: m[3].trim() };
-                            }
-                            return null;
-                        })
-                        .filter(item => item !== null);
-                } catch (error) {
-                    console.error('Ошибка загрузки mychords.txt. Убедитесь, что файл существует на сервере.', error);
-                    picksList.innerHTML = `<li class="text-red-500 text-center">${textContent.picksNotFound}</li>`;
                     return;
                 }
 
-                picksList.innerHTML = '';
-                if (picks.length === 0) {
-                    picksList.innerHTML = `<li class="text-red-500 text-center">${textContent.picksEmpty}</li>`;
-                } else {
-                    picks.forEach(p => {
-                        const listItem = document.createElement('li');
-                        listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
-                        listItem.innerHTML = `
-                            <a href="${p.url}" target="_blank" rel="noopener noreferrer" class="flex items-center w-full">
-                                <span class="text-xl text-white font-semibold flex-1">
-                                    ${p.title} - <span class="text-gray-400 font-normal">${p.artist}</span>
-                                </span>
-                            </a>
-                        `;
-                        picksList.appendChild(listItem);
-                    });
+                if (filtered.length === 0) {
+                    listElement.innerHTML = `<li class="text-gray-400 text-center">${textContent.noResults}</li>`;
+                    return;
                 }
+
+                filtered.forEach(song => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
+                    listItem.innerHTML = `
+                        <span class="text-xl text-white font-semibold flex-1">
+                            ${song.title} - <span class="text-gray-400 font-normal">${song.artist}</span>
+                        </span>
+                    `;
+                    listElement.appendChild(listItem);
+                });
+            }
+
+            async function renderChordstabs(textContent) {
+                if (!chordstabsList) return;
+                let chordstabsItems = chordstabsCache;
+                if (!Array.isArray(chordstabsItems)) {
+                    chordstabsItems = [];
+                    try {
+                        const response = await fetch('data/mychords.txt');
+                        if (!response.ok) {
+                            throw new Error(`Failed to load mychords.txt: ${response.statusText}`);
+                        }
+                        const text = await response.text();
+                        chordstabsItems = text.split('\n')
+                            .map(line => line.trim())
+                            .filter(line => line.length > 0)
+                            .map(line => {
+                                const m = line.match(/^\s*(.+?)\s*-\s*(.+?)\s*\[(.+?)\]\s*$/);
+                                if (m) {
+                                    return { artist: m[1].trim(), title: m[2].trim(), url: m[3].trim() };
+                                }
+                                return null;
+                            })
+                            .filter(item => item !== null);
+                        chordstabsCache = chordstabsItems;
+                    } catch (error) {
+                        console.error('Ошибка загрузки mychords.txt. Убедитесь, что файл существует на сервере.', error);
+                        chordstabsList.innerHTML = `<li class=\"text-red-500 text-center\">${textContent.chordstabsNotFound}</li>`;
+                        return;
+                    }
+                }
+
+                const query = normalizeString(searchQuery);
+                const filtered = query
+                    ? chordstabsItems.filter(p => {
+                        const hay = normalizeString(`${p.title} ${p.artist}`);
+                        return hay.includes(query);
+                    })
+                    : chordstabsItems;
+
+                chordstabsList.innerHTML = '';
+                if (chordstabsItems.length === 0) {
+                    chordstabsList.innerHTML = `<li class=\"text-red-500 text-center\">${textContent.chordstabsEmpty}</li>`;
+                    return;
+                }
+
+                if (filtered.length === 0) {
+                    chordstabsList.innerHTML = `<li class="text-gray-400 text-center">${textContent.noResults}</li>`;
+                    return;
+                }
+
+                filtered.forEach(p => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'bg-gray-800/70 backdrop-blur rounded-2xl p-4 md:p-5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-white/10 flex items-center song-list-item';
+                    listItem.innerHTML = `
+                        <a href="${p.url}" target="_blank" rel="noopener noreferrer" class="flex items-center w-full">
+                            <span class="text-xl text-white font-semibold flex-1">
+                                ${p.title} - <span class="text-gray-400 font-normal">${p.artist}</span>
+                            </span>
+                        </a>
+                    `;
+                    chordstabsList.appendChild(listItem);
+                });
             }
 
             function renderCurrentTab(textContent) {
@@ -334,11 +416,11 @@
                     }
                     return p;
                 }
-                const p = renderPicks(textContent);
-                if (picksSection) {
-                    picksSection.classList.remove('fade-in');
-                    void picksSection.offsetWidth;
-                    picksSection.classList.add('fade-in');
+                const p = renderChordstabs(textContent);
+                if (chordstabsSection) {
+                    chordstabsSection.classList.remove('fade-in');
+                    void chordstabsSection.offsetWidth;
+                    chordstabsSection.classList.add('fade-in');
                 }
                 return p;
             }
@@ -355,10 +437,20 @@
                 lastTextContent = textContent;
 
                 if (tabAll) tabAll.textContent = textContent.tabAll;
-                if (tabPicks) tabPicks.textContent = textContent.tabPicks;
-                if (picksHeaderEl) {
-                    const picksHeaderText = document.getElementById('picksHeaderText');
-                    if (picksHeaderText) picksHeaderText.textContent = textContent.picksHeader + ' ';
+                if (tabChordstabsBtn) tabChordstabsBtn.textContent = textContent.tabChordstabs;
+                if (chordstabsHeaderEl) {
+                    const chordstabsHeaderText = document.getElementById('chordstabsHeaderText');
+                    if (chordstabsHeaderText) chordstabsHeaderText.textContent = textContent.chordstabsHeader + ' ';
+                }
+
+                if (searchInput) {
+                    searchInput.placeholder = textContent.searchPlaceholder;
+                    searchInput.setAttribute('aria-label', textContent.searchPlaceholder);
+                    searchInput.value = searchQuery;
+                    if (clearSearchBtn) {
+                        clearSearchBtn.classList.toggle('hidden', !searchQuery);
+                        clearSearchBtn.setAttribute('title', lang === 'en' ? 'Clear' : (lang === 'uk' ? 'Очистити' : 'Очистить'));
+                    }
                 }
 
                 setActiveLangButton(lang);
@@ -416,21 +508,46 @@
             });
 
             tabAll?.addEventListener('click', () => { setActiveTab('all'); });
-            tabPicks?.addEventListener('click', () => { setActiveTab('picks'); });
+            tabChordstabsBtn?.addEventListener('click', () => { setActiveTab('chordstabs'); });
+
+            function commitSearch(value) {
+                searchQuery = value;
+                try { localStorage.setItem('searchQuery', searchQuery); } catch (e) {}
+                if (clearSearchBtn) clearSearchBtn.classList.toggle('hidden', !searchQuery);
+                if (lastTextContent) renderCurrentTab(lastTextContent);
+            }
+
+            searchInput?.addEventListener('input', (e) => {
+                commitSearch(e.target.value);
+            });
+            searchInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    commitSearch('');
+                    if (searchInput) searchInput.value = '';
+                }
+            });
+            clearSearchBtn?.addEventListener('click', () => {
+                commitSearch('');
+                if (searchInput) {
+                    searchInput.value = '';
+                    searchInput.focus();
+                }
+            });
 
             function initIndicator() {
                 if (!tabIndicator || !tabsContainer) return;
-                const activeBtn = currentTab === 'all' ? tabAll : tabPicks;
+                const activeBtn = currentTab === 'all' ? tabAll : tabChordstabsBtn;
                 if (activeBtn) {
                     const rect = activeBtn.getBoundingClientRect();
                     tabIndicator.style.width = `${rect.width}px`;
                     tabIndicator.style.height = `${rect.height}px`;
                 }
-                moveIndicatorTo(currentTab === 'all' ? tabAll : tabPicks);
+                moveIndicatorTo(currentTab === 'all' ? tabAll : tabChordstabsBtn);
             }
 
             window.addEventListener('resize', () => {
-                moveIndicatorTo(currentTab === 'all' ? tabAll : tabPicks);
+                moveIndicatorTo(currentTab === 'all' ? tabAll : tabChordstabsBtn);
             });
 
             const savedLang = (() => { try { return localStorage.getItem('lang'); } catch(e) { return null; } })();
@@ -460,10 +577,14 @@
                 const ctx = particlesCanvas.getContext('2d');
                 let canvasWidth = 0;
                 let canvasHeight = 0;
-                let devicePixelRatioSafe = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+                let devicePixelRatioSafe = Math.max(1, (window.devicePixelRatio || 1));
+                let stageWidth = 0;
+                let stageHeight = 0;
 
                 function resizeCanvas() {
-                    devicePixelRatioSafe = Math.max(1, Math.floor(window.devicePixelRatio || 1));
+                    const prevStageWidth = stageWidth;
+                    const prevStageHeight = stageHeight;
+                    devicePixelRatioSafe = Math.max(1, (window.devicePixelRatio || 1));
                     const cssWidth = window.innerWidth;
                     const cssHeight = window.innerHeight;
                     canvasWidth = Math.floor(cssWidth * devicePixelRatioSafe);
@@ -472,7 +593,18 @@
                     particlesCanvas.height = canvasHeight;
                     particlesCanvas.style.width = cssWidth + 'px';
                     particlesCanvas.style.height = cssHeight + 'px';
+                    stageWidth = cssWidth;
+                    stageHeight = cssHeight;
                     ctx.setTransform(devicePixelRatioSafe, 0, 0, devicePixelRatioSafe, 0, 0);
+
+                    if (prevStageWidth > 0 && prevStageHeight > 0) {
+                        const scaleX = stageWidth / prevStageWidth;
+                        const scaleY = stageHeight / prevStageHeight;
+                        for (let i = 0; i < particles.length; i++) {
+                            particles[i].x *= scaleX;
+                            particles[i].y *= scaleY;
+                        }
+                    }
                 }
 
                 const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -485,8 +617,8 @@
                     const size = random(1.0, 2.6);
                     const speed = random(0.08, 0.35) * (size / 2.6);
                     return {
-                        x: random(0, window.innerWidth),
-                        y: random(0, window.innerHeight),
+                        x: random(0, stageWidth || window.innerWidth),
+                        y: random(0, stageHeight || window.innerHeight),
                         vx: random(-0.05, 0.05),
                         vy: -speed,
                         size,
@@ -501,8 +633,8 @@
 
                 function wrap(p) {
                     const margin = 24;
-                    const w = window.innerWidth;
-                    const h = window.innerHeight;
+                    const w = stageWidth || window.innerWidth;
+                    const h = stageHeight || window.innerHeight;
                     if (p.x < -margin) p.x = w + margin;
                     if (p.x > w + margin) p.x = -margin;
                     if (p.y < -margin) p.y = h + margin;
@@ -510,7 +642,10 @@
                 }
 
                 function drawFrame() {
-                    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                    ctx.save();
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                    ctx.clearRect(0, 0, particlesCanvas.width, particlesCanvas.height);
+                    ctx.restore();
                     for (let i = 0; i < particles.length; i++) {
                         const p = particles[i];
                         p.x += p.vx;
