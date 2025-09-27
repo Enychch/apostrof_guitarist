@@ -330,11 +330,14 @@
 
             function setActiveTab(tab) {
                 const prevScrollY = window.scrollY || window.pageYOffset || 0;
+                const prevTab = currentTab;
                 currentTab = tab;
                 try { localStorage.setItem('tab', tab); } catch (e) {}
                 if (tab === 'all') {
-                    skipNextListAnimation = true;
-                    songsPage = 1; lastSongsPage = 1;
+                    if (prevTab !== 'all') {
+                        skipNextListAnimation = true;
+                        songsPage = 1; lastSongsPage = 1;
+                    }
                     tabAll?.classList.add('active-tab');
                     tabChordstabsBtn?.classList.remove('active-tab');
                     allSection?.classList.remove('hidden');
@@ -346,8 +349,10 @@
                     }
                     moveIndicatorTo(tabAll);
                 } else if (tab === 'chordstabs') {
-                    skipNextListAnimation = true;
-                    chordstabsPage = 1; lastChordstabsPage = 1;
+                    if (prevTab !== 'chordstabs') {
+                        skipNextListAnimation = true;
+                        chordstabsPage = 1; lastChordstabsPage = 1;
+                    }
                     tabChordstabsBtn?.classList.add('active-tab');
                     tabAll?.classList.remove('active-tab');
                     chordstabsSection?.classList.remove('hidden');
