@@ -6,9 +6,12 @@
 <title id="pageTitle">Apostrof | Репертуар</title>
 <meta name="description" content="Репертуар гитариста Апостроф гитарист - полный список песен, подборы аккордов на apostrofguitarist.com">
 <meta name="theme-color" content="#e63946">
+<link rel="icon" type="image/png" sizes="32x32" href="img/apostrof_guitarist-mini.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="img/profile.webp" fetchpriority="high">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"></noscript>
 <style>
 html { scroll-behavior: smooth; scrollbar-gutter: stable; background: var(--bg); }
 
@@ -58,7 +61,7 @@ body>*:not(canvas){position:relative;z-index:1}
   mask-size:contain; mask-repeat:no-repeat; mask-position:center;
 }
 .ico.tiktok { -webkit-mask-image:url('img/tiktok.svg'); mask-image:url('img/tiktok.svg'); }
-.ico.search { -webkit-mask-image:url('img/Search.png'); mask-image:url('img/Search.png'); background-color:var(--mt); width:1.1rem; height:1.1rem; }
+.ico.search { -webkit-mask-image:url('img/Search.svg'); mask-image:url('img/Search.svg'); background-color:var(--mt); width:1.1rem; height:1.1rem; }
 .ico.lang { -webkit-mask-image:url('img/language.svg'); mask-image:url('img/language.svg'); background-color:#fff; }
 .ico.song { -webkit-mask-image:url('img/song.svg'); mask-image:url('img/song.svg'); width:1rem; height:1rem; }
 .ico.color { -webkit-mask-image:url('img/color.svg'); mask-image:url('img/color.svg'); background-color:#fff; }
@@ -626,7 +629,7 @@ section{animation:fiu .3s ease both; margin-top:1.2rem;}
 
 <header>
   <div id="aring">
-    <img src="img/profile.jpg" alt="apostrof_guitarist">
+    <img src="img/profile.webp" alt="apostrof_guitarist" fetchpriority="high" loading="eager">
   </div>
   <h1 id="mainTitle" class="tg">Мой репертуар</h1>
   <p id="mdesc">Привет! Выбирайте песню по номеру из списка ниже.</p>
@@ -682,7 +685,7 @@ section{animation:fiu .3s ease both; margin-top:1.2rem;}
       <h2 id="chH" class="tg" style="display:flex;align-items:center;gap:.4rem">
         <span id="chHtxt">Мои подборы на </span>
         <a href="https://mychords.net" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center">
-          <img src="img/mychords-logo.png" alt="mychords" style="height:1.5rem;width:auto">
+          <img src="img/mychords-logo.svg" alt="mychords" style="height:1.5rem;width:auto;opacity:.9">
         </a>
       </h2>
     </div>
@@ -879,9 +882,10 @@ sortTitleBtn.addEventListener('click',e=>{
 
 function moveInd(el){
   if(!tabs||!tabInd||!el||el.classList.contains('hid'))return;
-  const cr=tabs.getBoundingClientRect(),er=el.getBoundingClientRect();
-  tabInd.style.transform=`translate(${er.left-cr.left}px,${er.top-cr.top}px)`;
-  tabInd.style.width=`${er.width}px`;tabInd.style.height=`${er.height}px`;
+  const cr=tabs.getBoundingClientRect();
+  const er=el.getBoundingClientRect();
+  const dx=er.left-cr.left,dy=er.top-cr.top,w=er.width,h=er.height;
+  tabInd.style.cssText+=`;transform:translate(${dx}px,${dy}px);width:${w}px;height:${h}px`;
 }
 
 function setTab(tab){
